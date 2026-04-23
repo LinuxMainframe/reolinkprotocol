@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 
 """
 Baichuan.py
@@ -114,6 +114,7 @@ HEADER_LENGTHS: dict[int, int] = {
     0x6414: 24,   # Modern — standard command/login (includes 4-byte payload-offset field)
     0x6482: 24,   # Modern — file download variant
     0x0146: 24,   # Modern — alternate command variant
+    0x0000: 24,   # Modern - Camera->Client
 }
 """
 Mapping of message-class integers to their corresponding header sizes in bytes.
@@ -172,6 +173,21 @@ def bc_decrypt(enc_offset: int, data: bytes) -> bytes:
         result[i] = byte ^ key_byte ^ offset_byte
     return bytes(result)
 
+
+def encrypt_baichuan(buf: str | bytes, offset: int) -> bytes:
+    """Encrypt a message using the baichuan protocol before sending"""
+    if offset > 255:
+        raise ValueError(f"Baichuan encryption offset {offset} can not be larger than 255")
+
+    if isinstance(buf, str):
+        buf = buf.encode("utf-8")
+
+    encrypt = b""
+    for idx, byte in enumerate(buf):
+        key = XML_KEY[(offset + idx) % len(XML_KEY)]
+        encrypted_byte = byte ^ key ^ (offset & 0xFF)
+        encrypt += encrypted_byte.to_bytes(1, 'little')
+    return encrypt
 
 # ============================================================================
 #  PAYLOAD BUILDERS
@@ -418,49 +434,160 @@ def recv_response(sock: socket.socket) -> tuple[bytes, bytes] | tuple[None, None
 # ============================================================================
 
 if __name__ == "__main__":
-    # Build and send a GetNonce request, then decode the camera's response.
+
+    # -----------------------------------------------------------------------
+    #  Configuration
+    # -----------------------------------------------------------------------
+
+    CAMERA_IP = "192.168.1.220"
+    USERNAME  = "admin"
+    PASSWORD  = "<password>"
+    CH_ID     = 0xFA   # Host-level channel identifier; also used as BC enc offset.
+
+    # -----------------------------------------------------------------------
+    #  Stage 1: GetNonce
+    # -----------------------------------------------------------------------
+
     nonce_payload = build_get_nonce_payload()
-    hdr           = build_header(
-        cmd_id=1,
-        payload_len=len(nonce_payload),
-        message_class=0x6514,
+    nonce_header  = build_header(
+        cmd_id        = 1,
+        payload_len   = len(nonce_payload),
+        message_class = 0x6514,
+        channel_id    = CH_ID,
+        mess_id       = 1,
+        encrypt       = b'\x12\xdc',
     )
-    message = hdr + nonce_payload
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(RECV_TIMEOUT)
-        sock.connect(('192.168.1.220', PORT))
-        sock.sendall(message)
+        sock.connect((CAMERA_IP, PORT))
+        print(f"[1] Connected to {CAMERA_IP}:{PORT}")
+
+        sock.sendall(nonce_header + nonce_payload)
+        print(f"[1] GetNonce sent ({len(nonce_header) + len(nonce_payload)} bytes)")
 
         resp_header, resp_payload = recv_response(sock)
 
         if resp_header is None:
-            print("No response received — connection failed or timed out.")
+            print("[1] ERROR: No nonce response received.")
+            raise SystemExit(1)
+
+        enc_offs = resp_header[12]
+        mclass   = struct.unpack_from('<H', resp_header, 18)[0]
+        print(f"[1] Nonce response: class=0x{mclass:04x}  enc_offs=0x{enc_offs:02x}")
+
+        # Nonce payload is BC-encrypted; plaintext fallback for older firmware.
+        if resp_payload.startswith(b'<?xml'):
+            nonce_xml_bytes = resp_payload
         else:
-            mclass   = struct.unpack_from('<H', resp_header, 18)[0]
-            msg_len  = struct.unpack_from('<I', resp_header, 8)[0]
-            enc_offs = resp_header[12]
-            print(f"Response: class=0x{mclass:04x}, len={msg_len}, enc_offs=0x{enc_offs:02x}")
+            nonce_xml_bytes = bc_decrypt(enc_offs, resp_payload)
 
-            if msg_len == 0:
-                print("Empty payload — camera rejected the request.")
-            else:
-                # Decrypt the payload if it is not already plain XML.
-                if resp_payload.startswith(b'<?xml'):
-                    xml_bytes = resp_payload
-                else:
-                    xml_bytes = bc_decrypt(enc_offs, resp_payload)
+        nonce_xml_str = nonce_xml_bytes.rstrip(b'\x00').decode('utf-8')
+        print(f"[1] Nonce XML:\n{nonce_xml_str}")
 
-                xml_str = xml_bytes.rstrip(b'\x00').decode('utf-8')
-                print("Payload XML:\n" + xml_str)
+        try:
+            root     = ET.fromstring(nonce_xml_str)
+            nonce_el = root.find('.//nonce')
+            if nonce_el is None or not nonce_el.text:
+                print("[1] ERROR: <nonce> element not found.")
+                raise SystemExit(1)
+            nonce = nonce_el.text.strip()
+        except ET.ParseError as exc:
+            print(f"[1] ERROR: XML parse failed: {exc}")
+            raise SystemExit(1)
 
-                # Extract and display the nonce.
-                try:
-                    root     = ET.fromstring(xml_str)
-                    nonce_el = root.find('.//nonce')
-                    if nonce_el is not None and nonce_el.text:
-                        print(f"SUCCESS: Nonce = {nonce_el.text.strip()}")
-                    else:
-                        print("No <nonce> element found in response.")
-                except ET.ParseError as e:
-                    print(f"XML parse error: {e}")
+        print(f"[1] Nonce: {nonce}")
+
+        # -----------------------------------------------------------------------
+        #  Stage 2: Derive credential hashes
+        #
+        #  The camera's <type>md5</type> field confirms plain MD5 with the nonce
+        #  mixed in.  The protocol caps comparison at 31 hex chars (32 bytes with
+        #  null terminator; byte 32 is always ignored by the camera).
+        # -----------------------------------------------------------------------
+
+        user_hash = hashlib.md5(f"{USERNAME}{nonce}".encode('utf-8')).hexdigest()[:31].upper()
+        pass_hash = hashlib.md5(f"{PASSWORD}{nonce}".encode('utf-8')).hexdigest()[:31].upper()
+
+        print(f"[2] User hash : {user_hash}")
+        print(f"[2] Pass hash : {pass_hash}")
+
+        # -----------------------------------------------------------------------
+        #  Stage 3: Build and encrypt the LoginUser XML
+        #
+        #  The login is sent as a legacy-class (0x6514) message with BC
+        #  encryption.  The enc_offset used for encryption is CH_ID, which
+        #  matches the channel_id byte placed at the start of the mess_id field.
+        # -----------------------------------------------------------------------
+
+        login_xml = (
+            '<?xml version="1.0" encoding="UTF-8" ?>\n'
+            '<body>\n'
+            '<LoginUser version="1.1">\n'
+            f'<userName>{user_hash}</userName>\n'
+            f'<password>{pass_hash}</password>\n'
+            '<userVer>1</userVer>\n'
+            '</LoginUser>\n'
+            '<LoginNet version="1.1">\n'
+            '<type>LAN</type>\n'
+            '<udpPort>0</udpPort>\n'
+            '</LoginNet>\n'
+            '</body>'
+        )
+        print(f"[3] Login XML:\n{login_xml}")
+
+        login_xml_bytes = login_xml.encode('utf-8') + b'\x00'
+        enc_login_xml   = encrypt_baichuan(login_xml_bytes, CH_ID)
+
+        login_header = build_header(
+            cmd_id        = 1,
+            payload_len   = len(enc_login_xml),
+            message_class = 0x6414,
+            channel_id    = CH_ID,
+            mess_id       = 2,
+            encrypt       = b'\x12\xdc',
+        )
+
+        print(f"[3] Login header : {login_header.hex()}")
+        print(f"[3] Enc payload  : {enc_login_xml[:32].hex()}...")
+        print(f"[3] Sending login ({len(login_header) + len(enc_login_xml)} bytes)...")
+
+        sock.sendall(login_header + enc_login_xml)
+
+        # -----------------------------------------------------------------------
+        #  Stage 4: Read and decode the login response
+        # -----------------------------------------------------------------------
+
+        resp_header, resp_payload = recv_response(sock)
+
+        if resp_header is None:
+            print("[4] ERROR: No login response received.")
+            raise SystemExit(1)
+
+        mclass       = struct.unpack_from('<H', resp_header, 18)[0]
+        msg_len      = struct.unpack_from('<I', resp_header, 8)[0]
+        login_offset = resp_header[12]
+
+        print(f"[4] Login response: class=0x{mclass:04x}  len={msg_len}  enc_offs=0x{login_offset:02x}")
+        print(f"[4] Raw header     : {resp_header.hex()}")
+
+        if msg_len == 0:
+            print("[4] ERROR: Empty response payload — login rejected.")
+            raise SystemExit(1)
+
+        if resp_payload.startswith(b'<?xml'):
+            login_response_xml = resp_payload
+        else:
+            login_response_xml = bc_decrypt(login_offset, resp_payload)
+
+        login_response_str = login_response_xml.rstrip(b'\x00').decode('utf-8', errors='replace')
+        print(f"[4] Login response XML:\n{login_response_str}")
+
+        try:
+            root = ET.fromstring(login_response_str)
+            for elem in root.iter():
+                if elem.text and elem.text.strip():
+                    print(f"    {elem.tag}: {elem.text.strip()}")
+        except ET.ParseError as exc:
+            print(f"[4] XML parse error (non-fatal): {exc}")
+                
