@@ -1,3 +1,4 @@
+```python
 #!/usr/bin/env python3
 """
 baichuan.py
@@ -1054,3 +1055,273 @@ if __name__ == "__main__":
                 )
 
     print("\nSession closed.")
+
+```
+
+```console
+Connecting to 192.168.0.220:9000 ...
+[nonce] GetNonce sent (86 bytes total)
+[nonce] response: class=0x6614  enc_offs=0xfa  len=158
+[nonce] XML:
+<?xml version="1.0" encoding="UTF-8" ?>
+<body>
+<Encryption version="1.1">
+<type>md5</type>
+<nonce>REDACTED</nonce>
+</Encryption>
+</body>
+
+[nonce] nonce: REDACTED
+[login] user_hash: REDACTED
+[login] pass_hash: REDACTED
+[login] login XML:
+<?xml version="1.0" encoding="UTF-8" ?>
+<body>
+<LoginUser version="1.1">
+<userName>REDACTED</userName>
+<password>REDACTED</password>
+<userVer>1</userVer>
+</LoginUser>
+<LoginNet version="1.1">
+<type>LAN</type>
+<udpPort>0</udpPort>
+</LoginNet>
+</body>
+[login] header      : f0debc0a0100000028010000fa0200000000146400000000
+[login] enc payload : REDACTED...
+[login] sending login (320 bytes total)
+[login] response: class=0x0000  len=4007  enc_offs=0xfa  status=0x00c8
+[login] raw header: f0debc0a01000000a70f0000fa020000c800000000000000
+[login] response XML:
+<?xml version="1.0" encoding="UTF-8" ?>
+<body>
+<DeviceInfo version="1.1">
+<firmVersion>57945531888563</firmVersion>
+<IOInputPortNum>0</IOInputPortNum>
+<IOOutputPortNum>0</IOOutputPortNum>
+<diskNum>0</diskNum>
+<type>ipc</type>
+<channelNum>1</channelNum>
+<audioNum>1</audioNum>
+<ipChannel>0</ipChannel>
+<analogChnNum>1</analogChnNum>
+<resolution>
+<resolutionName>4512*2512</resolutionName>
+<width>4512</width>
+<height>2512</height>
+</resolution>
+<secretCode>REDACTED</secretCode>
+<language>English</language>
+<sdCard>1</sdCard>
+<ptzMode>none</ptzMode>
+<typeInfo>IPC</typeInfo>
+<softVer>50397401</softVer>
+<hardVer>0</hardVer>
+<panelVer>0</panelVer>
+<hdChannel1>0</hdChannel1>
+<hdChannel2>0</hdChannel2>
+<hdChannel3>0</hdChannel3>
+<hdChannel4>0</hdChannel4>
+<norm>NTSC</norm>
+<osdFormat>MDY</osdFormat>
+<B485>0</B485>
+<supportAutoUpdate>0</supportAutoUpdate>
+<userVer>1</userVer>
+<FrameworkVer>1</FrameworkVer>
+<authMode>0</authMode>
+<binoType>0</binoType>
+</DeviceInfo>
+<StreamInfoList version="1.1">
+<StreamInfo>
+<channelBits>1</channelBits>
+<encodeTable>
+<type>mainStream</type>
+<resolution>
+<width>4512</width>
+<height>2512</height>
+</resolution>
+<defaultFramerate>20</defaultFramerate>
+<defaultBitrate>8192</defaultBitrate>
+<framerateTable>20,18,16,15,12,10,8,6,4,2</framerateTable>
+<bitrateTable>3072,4096,5120,6144,7168,8192,9216,10240</bitrateTable>
+<defaultGop>2</defaultGop>
+</encodeTable>
+<encodeTable>
+<type>subStream</type>
+<resolution>
+<width>896</width>
+<height>512</height>
+</resolution>
+<defaultFramerate>10</defaultFramerate>
+<defaultBitrate>1024</defaultBitrate>
+<framerateTable>20,15,10,7,4</framerateTable>
+<bitrateTable>128,256,384,512,768,1024,1228</bitrateTable>
+<defaultGop>4</defaultGop>
+</encodeTable>
+</StreamInfo>
+<StreamInfo>
+<channelBits>1</channelBits>
+<encodeTable>
+<type>mainStream</type>
+<resolution>
+<width>3840</width>
+<height>2160</height>
+</resolution>
+<defaultFramerate>25</defaultFramerate>
+<defaultBitrate>8192</defaultBitrate>
+<framerateTable>25,22,20,18,16,15,12,10,8,6,4,2</framerateTable>
+<bitrateTable>4096,5120,6144,7168,8192</bitrateTable>
+<defaultGop>2</defaultGop>
+</encodeTable>
+<encodeTable>
+<type>subStream</type>
+<resolution>
+<width>896</width>
+<height>512</height>
+</resolution>
+<defaultFramerate>10</defaultFramerate>
+<defaultBitrate>1024</defaultBitrate>
+<framerateTable>20,15,10,7,4</framerateTable>
+<bitrateTable>128,256,384,512,768,1024,1228</bitrateTable>
+<defaultGop>4</defaultGop>
+</encodeTable>
+</StreamInfo>
+<StreamInfo>
+<channelBits>1</channelBits>
+<encodeTable>
+<type>mainStream</type>
+<resolution>
+<width>2560</width>
+<height>1440</height>
+</resolution>
+<defaultFramerate>25</defaultFramerate>
+<defaultBitrate>8192</defaultBitrate>
+<framerateTable>25,22,20,18,16,15,12,10,8,6,4,2</framerateTable>
+<bitrateTable>1024,1536,2048,3072,4096,5120,6144,7168,8192</bitrateTable>
+<defaultGop>2</defaultGop>
+</encodeTable>
+<encodeTable>
+<type>subStream</type>
+<resolution>
+<width>896</width>
+<height>512</height>
+</resolution>
+<defaultFramerate>10</defaultFramerate>
+<defaultBitrate>1024</defaultBitrate>
+<framerateTable>20,15,10,7,4</framerateTable>
+<bitrateTable>128,256,384,512,768,1024,1228</bitrateTable>
+<defaultGop>4</defaultGop>
+</encodeTable>
+</StreamInfo>
+<StreamInfo>
+<channelBits>1</channelBits>
+<encodeTable>
+<type>mainStream</type>
+<resolution>
+<width>2304</width>
+<height>1296</height>
+</resolution>
+<defaultFramerate>25</defaultFramerate>
+<defaultBitrate>8192</defaultBitrate>
+<framerateTable>25,22,20,18,16,15,12,10,8,6,4,2</framerateTable>
+<bitrateTable>1024,1536,2048,3072,4096,5120,6144,7168,8192</bitrateTable>
+<defaultGop>2</defaultGop>
+</encodeTable>
+<encodeTable>
+<type>subStream</type>
+<resolution>
+<width>896</width>
+<height>512</height>
+</resolution>
+<defaultFramerate>10</defaultFramerate>
+<defaultBitrate>1024</defaultBitrate>
+<framerateTable>20,15,10,7,4</framerateTable>
+<bitrateTable>128,256,384,512,768,1024,1228</bitrateTable>
+<defaultGop>4</defaultGop>
+</encodeTable>
+</StreamInfo>
+</StreamInfoList>
+</body>
+
+
+Logged in.  Nonce: 69eade3c-VTW7RJf40PElhYnawAxi
+
+── Device Info ──────────────────────────────────────────────────
+  Type         : IPC
+  Firmware     : 57945531888563
+  Resolution   : 4512*2512
+  Channels     : 1  (audio: 1)
+  Norm / Lang  : NTSC / English
+  PTZ mode     : none
+  SD card      : yes
+  Needs rotate : no
+  softVer      : 50397401  hardVer: 0
+  extras:
+    IOInputPortNum: 0
+    IOOutputPortNum: 0
+    diskNum: 0
+    ipChannel: 0
+    analogChnNum: 1
+    secretCode: REDACTED
+    panelVer: 0
+    hdChannel1: 0
+    hdChannel2: 0
+    hdChannel3: 0
+    hdChannel4: 0
+    osdFormat: MDY
+    B485: 0
+    supportAutoUpdate: 0
+    userVer: 1
+    FrameworkVer: 1
+
+── Stream Info ──────────────────────────────────────────────────
+  StreamInfo [0]  channelBits=1
+  [mainStream]  4512x2512  default 20fps @ 8192kbps  gop=2
+    fps options : 20/18/16/15/12/10/8/6/4/2
+    kbps options: 3072/4096/5120/6144/7168/8192/9216/10240
+  [subStream]  896x512  default 10fps @ 1024kbps  gop=4
+    fps options : 20/15/10/7/4
+    kbps options: 128/256/384/512/768/1024/1228
+  StreamInfo [1]  channelBits=1
+  [mainStream]  3840x2160  default 25fps @ 8192kbps  gop=2
+    fps options : 25/22/20/18/16/15/12/10/8/6/4/2
+    kbps options: 4096/5120/6144/7168/8192
+  [subStream]  896x512  default 10fps @ 1024kbps  gop=4
+    fps options : 20/15/10/7/4
+    kbps options: 128/256/384/512/768/1024/1228
+  StreamInfo [2]  channelBits=1
+  [mainStream]  2560x1440  default 25fps @ 8192kbps  gop=2
+    fps options : 25/22/20/18/16/15/12/10/8/6/4/2
+    kbps options: 1024/1536/2048/3072/4096/5120/6144/7168/8192
+  [subStream]  896x512  default 10fps @ 1024kbps  gop=4
+    fps options : 20/15/10/7/4
+    kbps options: 128/256/384/512/768/1024/1228
+  StreamInfo [3]  channelBits=1
+  [mainStream]  2304x1296  default 25fps @ 8192kbps  gop=2
+    fps options : 25/22/20/18/16/15/12/10/8/6/4/2
+    kbps options: 1024/1536/2048/3072/4096/5120/6144/7168/8192
+  [subStream]  896x512  default 10fps @ 1024kbps  gop=4
+    fps options : 20/15/10/7/4
+    kbps options: 128/256/384/512/768/1024/1228
+[stream] preview XML:
+<?xml version="1.0" encoding="UTF-8" ?>
+<body>
+<Preview version="1.1">
+<channelId>0</channelId>
+<handle>0</handle>
+<streamType>mainStream</streamType>
+</Preview>
+</body>
+[stream] sending Preview (194 bytes total)
+[stream] ack: class=0x0000  status=0x0190  enc_offs=0xfa  payload=0 bytes
+Traceback (most recent call last):
+  File "/home/user/Documents/code/baichuanpython/login5.py", line 1037, in <module>
+    streaming = bc.request_stream(channel_id=0, stream_type="mainStream")
+  File "/home/user/Documents/code/baichuanpython/login5.py", line 984, in request_stream
+    return request_stream(self.session, channel_id, handle, stream_type)
+  File "/home/user/Documents/code/baichuanpython/login5.py", line 816, in request_stream
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: 192.168.0.220: Stream request returned empty payload with status 0x0190 (expected 0x00C8).
+```
